@@ -49,7 +49,11 @@ class EmgCollector(myo.DeviceListener):
         emg_data_array = np.array(self.emg_data)
         filename = f"{self.name}/{self.gesture}_{self.gesture_index}.npy"
         np.save(filename, emg_data_array)
-
+        
+        # Save forearm size 
+        filename = f"{self.name}/forearm_circumference.npy"
+        np.save(filename, np.array(self.forearm_circumference))
+        
         # Increment gesture index
         self.countdown_label.config(text="")
 
