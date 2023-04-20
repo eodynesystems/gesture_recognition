@@ -4,6 +4,13 @@ import time
 import os
 import tkinter as tk
 from threading import Lock
+import platform
+
+if platform.system() == "Windows":
+    sdk_path = 'C:\\myo-sdk-win-0.9.0\\'
+elif platform.system() == "Darwin":
+    sdk_path = os.path.abspath('SDK/myo-sdk-mac-0.9.0')
+
 
 rec_duration = 6
 
@@ -63,7 +70,7 @@ def collect_emg_data(name, forearm_circumference, gesture, gesture_index):
         os.makedirs(name)
 
     # Initialize MYO and start recording
-    myo.init(sdk_path='C:\\myo-sdk-win-0.9.0\\')
+    myo.init(sdk_path=sdk_path)
     hub = myo.Hub()
     for gesture_index in range(5):
         start = time.time()

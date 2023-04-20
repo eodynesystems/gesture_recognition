@@ -3,6 +3,11 @@ import os
 import requests
 import zipfile
 import shutil
+import platform
+
+system = platform.system()
+if system == "Darwin":
+    os.mkdir("SDK")
 
 # install myo sdk
 print("Installing MYO SDK...")
@@ -13,7 +18,10 @@ r = requests.get(url, allow_redirects=True)
 open('temp/myo-sdk-win-0.9.0.zip', 'wb').write(r.content)
 
 with zipfile.ZipFile('temp/myo-sdk-win-0.9.0.zip', 'r') as zip_ref:
-    zip_ref.extractall("C:/")
+    if system == "Windows":
+        zip_ref.extractall("C:/")
+    elif system == "Darwin":
+        zip_ref.extractall("SDK/")
 
 # download myo installer
 print("Downloading MYO Installer...")
