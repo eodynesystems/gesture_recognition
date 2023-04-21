@@ -54,12 +54,12 @@ class EmgCollector(myo.DeviceListener):
         self.is_recording = False
         self.countdown_label.config(text=f"You may relax! Saving {self.gesture} data...")
         self.root.update()
-        time.sleep(1)
+        time.sleep(2)
 
         # Save EMG data to file
         if not os.path.isdir(f"data/{self.name}"):
             os.mkdir(f"data/{self.name}")
-            
+
         emg_data_array = np.array(self.emg_data)
         filename = f"data/{self.name}/{self.gesture}_{self.gesture_index}.npy"
         np.save(filename, emg_data_array)
@@ -83,15 +83,10 @@ def collect_emg_data(name, forearm_circumference, gesture, gesture_index):
     for gesture_index in range(5):
         start = time.time()
         listener = EmgCollector(start, name, forearm_circumference, gesture, gesture_index, root)
-        try:
-            while hub.run(listener.on_event, 500):
-                if not listener.is_recording:
-                    listener.start_recording()
-                else:
-                    if len(listener.emg_data) >= 1150:
-                        listener.stop_recording()
-        except KeyboardInterrupt:
-            print('\nQuit')
+        listener.start_recording()
+        hub.run(listener, rec_duration * 1000)
+        listener.stop_recording()
+        
     for widget in root.winfo_children():
         if isinstance(widget, tk.Entry):
             widget.delete(0, 'end')
