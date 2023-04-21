@@ -57,6 +57,9 @@ class EmgCollector(myo.DeviceListener):
         time.sleep(1)
 
         # Save EMG data to file
+        if not os.path.isdir(f"data/{self.name}"):
+            os.mkdir(f"data/{self.name}")
+            
         emg_data_array = np.array(self.emg_data)
         filename = f"data/{self.name}/{self.gesture}_{self.gesture_index}.npy"
         np.save(filename, emg_data_array)
