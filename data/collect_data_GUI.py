@@ -69,7 +69,7 @@ class EmgCollector(myo.DeviceListener):
         np.save(filename, np.array(self.forearm_circumference))
         
         # Increment gesture index
-        self.countdown_label.config(text="")
+        self.countdown_label.destroy()
         self.root.update()
 
 def collect_emg_data(name, forearm_circumference, gesture, gesture_index):
