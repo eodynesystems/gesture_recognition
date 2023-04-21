@@ -80,7 +80,7 @@ def collect_emg_data(name, forearm_circumference, gesture, gesture_index):
     # Initialize MYO and start recording
     myo.init(sdk_path=sdk_path)
     hub = myo.Hub()
-    for gesture_index in range(5):
+    for gesture_index in range(3):
         start = time.time()
         listener = EmgCollector(start, name, forearm_circumference, gesture, gesture_index, root)
         listener.start_recording()
