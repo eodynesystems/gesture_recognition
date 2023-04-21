@@ -25,7 +25,7 @@ class EmgCollector(myo.DeviceListener):
         self.emg_data = np.zeros((1, 8))
         self.lock = Lock()
         self.is_recording = False
-        self.countdown_label = tk.Label(root, font=("Helvetica", 20))
+        self.countdown_label = tk.Label(root, font=("Helvetica", 15), pady=40)
         self.countdown_label.pack()
 
     def on_connected(self, event):
@@ -40,29 +40,34 @@ class EmgCollector(myo.DeviceListener):
         countdown_secs = 5
         for i in range(countdown_secs):
             self.countdown_label.config(text=f"Recording {self.gesture} in {countdown_secs-i} seconds...")
+            self.root.update()
             time.sleep(1)
 
         # Start recording
         self.is_recording = True
         self.emg_data = np.zeros((1, 8))
         self.countdown_label.config(text=f"Recording {self.gesture}...")
+        self.root.update()
 
     def stop_recording(self):
         # Stop recording
         self.is_recording = False
         self.countdown_label.config(text=f"You may relax! Saving {self.gesture} data...")
+        self.root.update()
+        time.sleep(1)
 
         # Save EMG data to file
         emg_data_array = np.array(self.emg_data)
-        filename = f"{self.name}/{self.gesture}_{self.gesture_index}.npy"
+        filename = f"data/{self.name}/{self.gesture}_{self.gesture_index}.npy"
         np.save(filename, emg_data_array)
         
         # Save forearm size 
-        filename = f"{self.name}/forearm_circumference.npy"
+        filename = f"data/{self.name}/forearm_circumference.npy"
         np.save(filename, np.array(self.forearm_circumference))
         
         # Increment gesture index
         self.countdown_label.config(text="")
+        self.root.update()
 
 def collect_emg_data(name, forearm_circumference, gesture, gesture_index):
     # Create participant directory if it doesn't exist
@@ -84,7 +89,10 @@ def collect_emg_data(name, forearm_circumference, gesture, gesture_index):
                         listener.stop_recording()
         except KeyboardInterrupt:
             print('\nQuit')
-
+    for widget in root.winfo_children():
+        if isinstance(widget, tk.Entry):
+            widget.delete(0, 'end')
+ 
 # Create GUI
 root = tk.Tk()
 root.title("EMG Data Collection")
@@ -100,6 +108,7 @@ participant_entry.pack()
 forearm_label = tk.Label(root, text="Forearm Circumference (cm):")
 forearm_label.pack()
 forearm_entry = tk.Entry(root)
+forearm_entry.insert(0, 0)
 forearm_entry.pack()
 
 # Add gesture dropdown menu
