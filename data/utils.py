@@ -16,7 +16,8 @@ gesture_display_text = {"OpenHand": "Open Hand",
                         "Pinch": "Pinch",
                         "Tripod":"Tripod",
                         "Point":"Point",
-                        "Lateral":"Lateral"}
+                        "Lateral":"Lateral",
+                        "Neutral":"Rest"}
 
 class GIFViewer(tk.Label):
     def __init__(self, master=None, filename=None, **kw):
