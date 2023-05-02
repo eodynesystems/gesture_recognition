@@ -7,6 +7,16 @@ import threading
 from threading import Lock
 from PIL import Image, ImageTk
 
+gesture_display_text = {"OpenHand": "Open Hand", 
+                        "ClosedHand": "Closed Hand",
+                        "ThumbAbduction": "Thumb-in",
+                        "ThumbAdduction": "Thumb-out",
+                        "WristPronation": "Palm-down",
+                        "WristSupination": "Palm-up",
+                        "Pinch": "Pinch",
+                        "Tripod":"Tripod",
+                        "Point":"Point",
+                        "Lateral":"Lateral"}
 
 class GIFViewer(tk.Label):
     def __init__(self, master=None, filename=None, **kw):
@@ -58,7 +68,7 @@ class EmgCollector(myo.DeviceListener):
     def start_recording(self, countdown_secs = 5):
         # Start countdown timer
         for i in range(countdown_secs):
-            self.countdown_label.config(text=f"Recording {self.gesture} in {countdown_secs-i} seconds...")
+            self.countdown_label.config(text=f"Recording {gesture_display_text[self.gesture]} in {countdown_secs-i} seconds...")
             self.root.update()
             time.sleep(1)
 
@@ -74,7 +84,7 @@ class EmgCollector(myo.DeviceListener):
         # Start recording
         self.is_recording = True
         self.emg_data = np.zeros((1, 8))
-        self.countdown_label.config(text=f"Recording {self.gesture}...")
+        self.countdown_label.config(text=f"Recording {gesture_display_text[self.gesture]}...")
         self.root.update()
 
     def stop_recording(self):
@@ -84,7 +94,7 @@ class EmgCollector(myo.DeviceListener):
 
         # Stop recording
         self.is_recording = False
-        self.countdown_label.config(text=f"Saving {self.gesture} data...")
+        self.countdown_label.config(text=f"Saving {gesture_display_text[self.gesture]} data...")
         self.root.update()
 
         # Save EMG data to file
@@ -105,3 +115,4 @@ class EmgCollector(myo.DeviceListener):
 
         # Reset EMG
         self.emg_data = np.zeros((1, 8))
+

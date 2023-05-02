@@ -6,7 +6,7 @@ import tkinter as tk
 import threading
 from threading import Lock
 import platform
-from utils import EmgCollector, GIFViewer
+from utils import EmgCollector, GIFViewer, gesture_display_text
 
 if platform.system() == "Windows":
     sdk_path = 'C:\\myo-sdk-win-0.9.0\\'
@@ -75,7 +75,7 @@ def clean_gif(gif_viewer, gif_label, next_button):
 
 def show_gif(gesture, next_button, gif_label, pair=False):
     global gif_viewer
-    gif_label.config(text = gesture)
+    gif_label.config(text = gesture_display_text[gesture])
     next_button.destroy()
     if gif_viewer is not None:
         gif_viewer.destroy()
