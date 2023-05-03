@@ -28,10 +28,6 @@ def collect_emg_data(name, forearm_circumference, gesture):
     if gif_viewer is not None:
         gif_viewer.destroy()
 
-    # Create participant directory if it doesn't exist
-    if not os.path.exists(name):
-        os.makedirs(name)
-
     # Initialize MYO and start recording
     myo.init(sdk_path=sdk_path)
     hub = myo.Hub()
