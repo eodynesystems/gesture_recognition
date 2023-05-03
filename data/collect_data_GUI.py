@@ -28,9 +28,6 @@ def collect_emg_data(name, forearm_circumference, gesture):
     if gif_viewer is not None:
         gif_viewer.destroy()
 
-    # Initialize MYO and start recording
-    myo.init(sdk_path=sdk_path)
-    hub = myo.Hub()
 
     gesture_index = 0
     while gesture_index < 5:
@@ -38,14 +35,20 @@ def collect_emg_data(name, forearm_circumference, gesture):
             for idx, gest in enumerate(gesture_pairs[gesture]):
                 countdown = 5 if idx == 0 else 3
                 start = time.time()
+                # Initialize MYO and start recording
+                myo.init(sdk_path=sdk_path)
+                hub = myo.Hub()
                 listener = EmgCollector(start, name, forearm_circumference, gest, gesture_index, root)
                 listener.start_recording(countdown)
                 listener.emg_data = np.zeros((1, 8))
                 hub.run(listener, rec_duration * 1000)
                 hub.stop()
                 listener.stop_recording()
-                
+                del listener 
+                del hub
         else:
+            myo.init(sdk_path=sdk_path)
+            hub = myo.Hub()
             start = time.time()
             listener = EmgCollector(start, name, forearm_circumference, gesture, gesture_index, root)
             listener.start_recording()
@@ -53,6 +56,8 @@ def collect_emg_data(name, forearm_circumference, gesture):
             hub.run(listener, rec_duration * 1000)
             hub.stop()
             listener.stop_recording()
+            del listener 
+            del hub
         
         gesture_index+=1
     reset_GUI(root)
