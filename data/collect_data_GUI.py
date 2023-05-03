@@ -23,9 +23,7 @@ start_button = None
 gif_label = None
 discard_button = None
 
-def collect_emg_data(name, forearm_circumference, gesture): 
-    files = glob.glob(f"{name}/*")
-    name = f"{name}/{len(files)}"    
+def collect_emg_data(name, forearm_circumference, gesture):  
 
     global gesture_index  
     if gif_viewer is not None:
