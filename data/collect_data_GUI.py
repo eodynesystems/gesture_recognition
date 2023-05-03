@@ -42,7 +42,7 @@ def collect_emg_data(name, forearm_circumference, gesture):
                 listener.start_recording(countdown)
                 listener.emg_data = np.zeros((1, 8))
                 hub.run(listener, rec_duration * 1000)
-                hub.shutdown()
+                hub.stop()
                 listener.stop_recording()
                 
         else:
@@ -51,7 +51,7 @@ def collect_emg_data(name, forearm_circumference, gesture):
             listener.start_recording()
             listener.emg_data = np.zeros((1, 8))
             hub.run(listener, rec_duration * 1000)
-            hub.shutdown()
+            hub.stop()
             listener.stop_recording()
         
         gesture_index+=1
