@@ -63,6 +63,7 @@ class EmgCollector(myo.DeviceListener):
 
     def on_emg(self, event):
         if self.is_recording:
+            print("adding...")
             self.emg_data = np.concatenate((self.emg_data, np.reshape(np.array(event.emg), (1, 8))), axis=0)
 
     
