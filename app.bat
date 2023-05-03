@@ -15,5 +15,5 @@ rem Using call is required here, see: https://stackoverflow.com/questions/246781
 call %CONDAPATH%\Scripts\activate.bat %ENVPATH%
 
 python data/collect_data_GUI.py
-PAUSE
+
 
