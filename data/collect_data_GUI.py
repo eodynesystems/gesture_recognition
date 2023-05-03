@@ -3,10 +3,10 @@ import numpy as np
 import time
 import os
 import tkinter as tk
-import threading
 from threading import Lock
 import platform
 from utils import EmgCollector, GIFViewer, gesture_display_text
+import glob
 
 if platform.system() == "Windows":
     sdk_path = 'C:\\myo-sdk-win-0.9.0\\'
@@ -23,11 +23,13 @@ start_button = None
 gif_label = None
 discard_button = None
 
-def collect_emg_data(name, forearm_circumference, gesture):  
+def collect_emg_data(name, forearm_circumference, gesture): 
+    files = glob.glob(f"{name}/*")
+    name = f"{name}/{len(files)}"    
+
     global gesture_index  
     if gif_viewer is not None:
         gif_viewer.destroy()
-
 
     gesture_index = 0
     while gesture_index < 5:
