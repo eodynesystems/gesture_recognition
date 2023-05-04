@@ -104,6 +104,11 @@ class EmgCollector(myo.DeviceListener):
 
         emg_data_array = np.array(self.emg_data)
         filename = f"data/{self.name}/{self.gesture}_{self.gesture_index}.npy"
+        i=1
+        while os.path.exists(filename):
+            filename = f"data/{self.name}/{self.gesture}_{self.gesture_index + i}.npy"
+            i+=1
+
         np.save(filename, emg_data_array)
         
         # Save forearm size 
