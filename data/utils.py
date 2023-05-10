@@ -91,7 +91,7 @@ class EmgCollector(myo.DeviceListener):
     def stop_recording(self):
         # Remove reference gif
         if self.reference_img_label is not None:
-            self.reference_img_label.pack_forget()
+            self.reference_img_label.destroy()
 
         # Stop recording
         self.is_recording = False

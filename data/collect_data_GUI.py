@@ -66,9 +66,9 @@ def decrease_by_one(x):
     x=-1
 
 def clean_gif(gif_viewer, gif_label, next_button):
-    gif_viewer.pack_forget()
-    gif_label.pack_forget()
-    next_button.pack_forget()
+    gif_viewer.destroy()
+    gif_label.destroy()
+    next_button.destroy()
     # Add start button
     start_button = tk.Button(root, text="Start", command=lambda: collect_emg_data(participant_entry.get(),
     float(forearm_entry.get()),
@@ -113,16 +113,16 @@ def reset_GUI(root):
     global next_button, start_button, gif_viewer, gif_label
     for widget in root.winfo_children():
         if (isinstance(widget, tk.Button)):
-            widget.pack_forget()
+            widget.destroy()
     if gif_viewer is not None:
         gif_viewer.destroy()
     if gif_label is not None:
-        gif_label.pack_forget()
+        gif_label.destroy()
 
     if start_button is not None:
-        start_button.pack_forget()
+        start_button.destroy()
     if discard_button is not None:
-        discard_button.pack_forget()
+        discard_button.destroy()
 
     # Add next button
     next_button = tk.Button(root, text="Next >>", command=lambda: show_tutorial(root, gesture_var.get()))
