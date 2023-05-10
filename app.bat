@@ -1,6 +1,7 @@
 ECHO ON
 rem Run a Python script in a given conda environment from a batch file.
-
+set HOME=%USERPROFILE%
+git pull
 rem Define here the path to your conda installation
 set CONDAPATH=C:\Users\USUARIO\anaconda3
 rem Define here the name of the environment
