@@ -7,7 +7,8 @@ __pycache__/
 *.so
 
 # numpy files 
-*.npy
+#*.npy
+Archive/*
 
 # Distribution / packaging
 .Python
