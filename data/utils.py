@@ -121,4 +121,3 @@ class EmgCollector(myo.DeviceListener):
 
         # Reset EMG
         self.emg_data = np.zeros((1, 8))
-

@@ -28,7 +28,7 @@ print("Downloading MYO Installer...")
 url = 'https://github.com/NiklasRosenstein/myo-python/releases/download/v1.0.4/Myo+Connect+Installer.exe'
 r = requests.get(url, allow_redirects=True)
 open('temp/Myo+Connect+Installer.exe', 'wb').write(r.content)
-z
+
 path = os.path.abspath("temp/Myo+Connect+Installer.exe")
 subprocess.run(r"{path}".format(path=path), shell=True)
 

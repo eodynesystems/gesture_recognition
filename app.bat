@@ -1,13 +1,9 @@
 ECHO ON
-rem Run a Python script in a given conda environment from a batch file.
 set HOME=%USERPROFILE%
 git pull
-rem Define here the path to your conda installation
-set CONDAPATH=C:\Users\USUARIO\anaconda3
-rem Define here the name of the environment
+set CONDAPATH=%HOME%\anaconda3
 set ENVNAME=GR_env
 
-rem The following command activates the base environment.
 rem call C:\ProgramData\Miniconda3\Scripts\activate.bat C:\ProgramData\Miniconda3
 if %ENVNAME%==base (set ENVPATH=%CONDAPATH%) else (set ENVPATH=%CONDAPATH%\envs\%ENVNAME%)
 
@@ -17,4 +13,4 @@ call %CONDAPATH%\Scripts\activate.bat %ENVPATH%
 
 python data/collect_data_GUI.py
 
-
+pause

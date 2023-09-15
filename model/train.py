@@ -14,29 +14,36 @@ import os
 from imblearn.under_sampling import RandomUnderSampler
 from GestureRecognitionModel import GestureRecognitionModel
 
-gestures_to_use = ["CloseHand", "Neutral", "OpenHand", 
+gestures_to_use = ["ClosedHand", "Neutral", "OpenHand", 
                 "WristSupination", "WristPronation",
-                "ThumbAbduction", "ThumbAdduction",
-                "Pinch", "Lateral", "Tripod", "Point"]   # "Pinch", "Lateral", "Tripod", "Point"
-individual = False
+                "ThumbAbduction", "ThumbAdduction",]   # "Pinch", "Lateral", "Tripod", "Point"
+individual = True
+version = "v2"
+if version == "v2":
+    gestures_to_use = ["hand_close", "hand_neutral", "hand_open", 
+                    "wrist_supin", "wrist_pron",
+                    "thumb_abd", "thumb_add",
+                    "pinch", "lateral", "point"]   # "pinch", "lateral", "tripod", "point"
 
 def main():
     # initialise pdf 
-    c = canvas.Canvas('../results_general.pdf', pagesize=letter)
+    c = canvas.Canvas('../results_v2.pdf', pagesize=letter)
     y = 2 * inch
 
     # load dataset 
-    df = pd.read_csv("../data/features.csv")
+    df = pd.read_csv(f"../data/features_{version}.csv")
     df = df[df.gesture.isin(gestures_to_use)]
     subjects = list(df.subject.unique())
-    subjects.remove("Mario")
-    subjects.remove("Hanaa")
+    if "Mario" in subjects:
+        subjects.remove("Mario")
+    if "Hanaa" in subjects:
+        subjects.remove("Hanaa")
 
     if not individual:
         subjects_to_remove = ["Mario", "Hanaa"]
-        df_train = df[df["take"] != 1]
+        df_train = df[df["take"] != 3]
         df_train = df_train[~df_train.subject.isin(subjects_to_remove)]
-        df_test = df[df["take"] == 1]
+        df_test = df[df["take"] == 3]
         
         gestures = df_train.gesture.unique()
         gesture_to_int = {gesture:i for i, gesture in enumerate(gestures)}
@@ -87,8 +94,8 @@ def main():
         cf_matrix = confusion_matrix(y_test, preds)
         fig = plt.figure(figsize = (10, 8))
         sns.heatmap(cf_matrix, annot=True, fmt=".0f")
-        plt.yticks(np.arange(0.5,len(gestures_to_use)-1, 1), [int_to_gesture[i] for i in range(len(int_to_gesture))], rotation=45)
-        plt.xticks(np.arange(0.5,len(gestures_to_use)-1, 1), [int_to_gesture[i] for i in range(len(int_to_gesture))], rotation=45)
+        plt.yticks(np.arange(0.5,len(gestures_to_use), 1), [int_to_gesture[i] for i in range(len(int_to_gesture))], rotation=45)
+        plt.xticks(np.arange(0.5,len(gestures_to_use), 1), [int_to_gesture[i] for i in range(len(int_to_gesture))], rotation=45)
         plt.ylabel("true")
         plt.xlabel("predicted")
         plt.tight_layout()
@@ -105,10 +112,17 @@ def main():
         c.showPage()
         y = 2 * inch
     
+        """"
+        # plot accuracy 
+        for gesture in df_test.gesture.unique():
+            accuracy = dict()
+
+            for timestamp in df_test.timestamp.unique():
+                df_sub_time = df_test[df_test.timestamp == timestamp]
+        """
+
     # save result PDF
     c.save()
-
-    
 
 if __name__ == "__main__":
     main()
