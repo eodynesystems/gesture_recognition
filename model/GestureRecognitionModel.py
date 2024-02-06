@@ -13,7 +13,6 @@ class GestureRecognitionModel():
 
     def evaluate(self, x, y):
         return self.model.score(x, y)
-        
 
     def predict(self, x):
         return self.model.predict(x)

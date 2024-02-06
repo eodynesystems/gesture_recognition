@@ -83,6 +83,7 @@ class Signal():
     
     def sliding_var(self, x, w=1):
         return bn.move_var(x, window=w)
+    
     #vis 
     def display(self, attr = "energy", w = 5):
         plt.figure()
@@ -111,7 +112,7 @@ class Signal():
             plt.plot(mov_var/mov_avg)
             plt.xlabel("time (samples)")
             plt.ylabel(f"Moving Variance of Energy (window = {w})")
-
-
+        ylim_bottom = min(0, plt.gca().get_ylim()[0])
+        plt.gca().set_ylim(bottom=ylim_bottom)
 
 
