@@ -39,19 +39,25 @@ class Signal():
             features = np.concatenate((features, f(x).reshape(1, 8)), axis=1)
         return features
 
-    def remove_transition(self):
+    def remove_transition(self, w=1):
+        # Extract features
+        self.signal = self.sliding_avg(self.signal, w)
         s = self.get_features(list_features=["mav"]).sum(axis=1)
-        # detection
-        algo = rpt.Binseg(model="l2").fit(s)
-        result = algo.predict(n_bkps=1)[0]
-        if result > len(s)//2:
-            result = 20
-        trans_idx = result*self.step
-        if self.signal.shape[0]>2*trans_idx:
-            self.signal = self.signal[trans_idx:, :]
-            self.n_samples = self.signal.shape[0]
-
-
+    
+        # Change point detection with Pelt
+        detect = rpt.Pelt(model="l2", min_size=40).fit(s)
+        result = detect.predict(pen=10)
+    
+        # Find first big change in direction
+        cutting_index = result[0] if result else 0
+    
+        # Remove phase of transition
+        self.signal = self.signal[cutting_index:, :]
+        self.n_samples = self.signal.shape[0]
+    
+        # Return altered signal
+        return self
+    
     # ops 
     def mav(self, x):                                      # mean absolute value
         return sum(abs(x)) / x.shape[0]
@@ -78,8 +84,11 @@ class Signal():
     def iatd(self, x):                                     # integrated absolute of third derivative
         return (sum(abs(self.derivative(self.derivative(self.derivative(x))))))
     
-    def sliding_avg(self, x, w=1):                         # sliding average with window size w
-        return np.convolve(x, np.ones(w), 'valid') / w
+    def sliding_avg(self, x, w=1):
+        if x.ndim > 1:
+            return np.apply_along_axis(lambda y: np.convolve(y, np.ones(w), 'valid') / w, axis=0, arr=x)
+        else:
+            return np.convolve(x, np.ones(w), 'valid') / w
     
     def sliding_var(self, x, w=1):
         return bn.move_var(x, window=w)
@@ -96,7 +105,7 @@ class Signal():
             plt.plot(energy)
             plt.xlabel("time (samples)")
             plt.ylabel("Energy")
-        if attr == "avg_slope_energy":
+        if attr == "avg_slope_energy": 
             energy = self.get_features(list_features=["mav"])
             energy = energy.sum(axis = 1)
             slope = energy[1:] - energy[:-1]
