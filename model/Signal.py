@@ -26,7 +26,7 @@ class Signal():
         
     def get_features(self, list_features = "all", remove_transition=False):
         if remove_transition:
-            self.remove_transition()
+            self.remove_transition(w=40) 
         features = np.empty((0, self.n_features))
         for idx in range(0, self.n_samples-self.window_size, self.step):
             x = self.signal[idx:idx+self.window_size, :]
@@ -39,24 +39,56 @@ class Signal():
             features = np.concatenate((features, f(x).reshape(1, 8)), axis=1)
         return features
 
-    def remove_transition(self, w=1):
-        # Extract features
-        self.signal = self.sliding_avg(self.signal, w)
-        s = self.get_features(list_features=["mav"]).sum(axis=1)
-    
-        # Change point detection with Pelt
-        detect = rpt.Pelt(model="l2", min_size=40).fit(s)
-        result = detect.predict(pen=10)
-    
-        # Find first big change in direction
-        cutting_index = result[0] if result else 0
-    
-        # Remove phase of transition
-        self.signal = self.signal[cutting_index:, :]
-        self.n_samples = self.signal.shape[0]
-    
-        # Return altered signal
-        return self
+    def remove_transition(self, algorithm="Binseg", w=50, min_s=30):
+        
+        if algorithm == "Binseg":
+
+            # detection using Binseg
+            s = self.get_features(list_features=["mav"]).sum(axis=1)
+            algo = rpt.Binseg(model="l2").fit(s)
+            result = algo.predict(n_bkps=1)[0]
+            if result > len(s) // 2:
+                result = 20
+            trans_idx = result * self.step
+            if self.signal.shape[0] > 2 * trans_idx:
+                self.signal = self.signal[trans_idx:, :]
+                self.n_samples = self.signal.shape[0]
+
+        if algorithm == "Pelt":
+
+            # store original signal
+            original_signal = self.signal.copy()
+
+            # extract features using sliding average
+            self.signal = self.sliding_avg(self.signal, w)
+            s = self.get_features(list_features=["mav"]).sum(axis=1)
+
+            # initialize change point detection with Pelt
+            result = None
+
+            # attempt valid removal, otherwise make window shorter to make the algorithm less aggressive
+            while min_s > 5 and not result:
+                try:
+                    detect = rpt.Pelt(model="l2", min_size=min_s).fit(s)
+                    result = detect.predict(pen=20)
+                    if result:  # valid removal found
+                        break
+                except Exception:  # if window size too large 
+                    min_s -= 1  # decrease min_size 
+
+            # find first big change in direction
+            if result:
+                cutting_index = result[0]
+            else:
+                # cut the signal at 10% of its length if no cutting point is found with minimal window
+                cutting_index = int(len(original_signal) * 0.1)
+
+            # transform this index into the original space
+            norm_cutting_index = cutting_index + (w - 1) if result else cutting_index
+
+            # remove phase of transition
+            self.signal = original_signal[norm_cutting_index:, :]
+            self.n_samples = self.signal.shape[0]
     
     # ops 
     def mav(self, x):                                      # mean absolute value
@@ -84,7 +116,7 @@ class Signal():
     def iatd(self, x):                                     # integrated absolute of third derivative
         return (sum(abs(self.derivative(self.derivative(self.derivative(x))))))
     
-    def sliding_avg(self, x, w=1):
+    def sliding_avg(self, x, w=1): 
         if x.ndim > 1:
             return np.apply_along_axis(lambda y: np.convolve(y, np.ones(w), 'valid') / w, axis=0, arr=x)
         else:
