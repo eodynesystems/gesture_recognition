@@ -105,9 +105,11 @@ This Python project, "Gesture Recognition," is designed for processing and analy
 - **Returns**:
     - Numpy array containing extracted signal features within the window.
 
-#### `remove_transition(self)`
+#### `remove_transition(self, algorithm, w, min_s)`
+Removes transitions in the signal using a change-point detection algorithm. Depending on parameter 'algorithm', one could choose the standard implication of the "Binseg" algorithm, or the "Pelt" algorithm which is adaptive in parameters:
 
-- Removes transitions in the signal using a change-point detection algorithm.
+- `w`: the window size of the implemented sliding_avg function.
+- `min_s`: the minimal number of data points between two change points that the algorithm considers valid, playing a crucial role in the sensitivity of the algorithm.
 
 #### Signal Processing Functions
 
