@@ -26,7 +26,7 @@ class Signal():
         
     def get_features(self, list_features = "all", remove_transition=False):
         if remove_transition:
-            self.remove_transition(w=40) 
+            self.remove_transition() 
         features = np.empty((0, self.n_features))
         for idx in range(0, self.n_samples-self.window_size, self.step):
             x = self.signal[idx:idx+self.window_size, :]
@@ -39,7 +39,7 @@ class Signal():
             features = np.concatenate((features, f(x).reshape(1, 8)), axis=1)
         return features
 
-    def remove_transition(self, algorithm="Binseg", w=50, min_s=30):
+    def remove_transition(self, algorithm="mean",window_size=5):
         
         if algorithm == "Binseg":
 
@@ -54,40 +54,19 @@ class Signal():
                 self.signal = self.signal[trans_idx:, :]
                 self.n_samples = self.signal.shape[0]
 
-        if algorithm == "Pelt":
+        
+        if algorithm == "mean":
 
-            # store original signal
-            original_signal = self.signal.copy()
-
-            # extract features using sliding average
-            self.signal = self.sliding_avg(self.signal, w)
+            # detection using the mean  
             s = self.get_features(list_features=["mav"]).sum(axis=1)
-
-            # initialize change point detection with Pelt
-            result = None
-
-            # attempt valid removal, otherwise make window shorter to make the algorithm less aggressive
-            while min_s > 5 and not result:
-                try:
-                    detect = rpt.Pelt(model="l2", min_size=min_s).fit(s)
-                    result = detect.predict(pen=20)
-                    if result:  # valid removal found
-                        break
-                except Exception:  # if window size too large 
-                    min_s -= 1  # decrease min_size 
-
-            # find first big change in direction
-            if result:
-                cutting_index = result[0]
-            else:
-                # cut the signal at 10% of its length if no cutting point is found with minimal window
-                cutting_index = int(len(original_signal) * 0.1)
-
-            # transform this index into the original space
-            norm_cutting_index = cutting_index + (w - 1) if result else cutting_index
-
-            # remove phase of transition
-            self.signal = original_signal[norm_cutting_index:, :]
+            trans_idx = 0
+            for i in range(0, len(s)-window_size):
+                window = s[i:i+window_size]
+                if (np.mean(window) > np.mean(s)) :
+                    break
+                trans_idx+=1
+            trans_idx = trans_idx*self.step
+            self.signal = self.signal[trans_idx:, :]
             self.n_samples = self.signal.shape[0]
     
     # ops 
@@ -117,10 +96,7 @@ class Signal():
         return (sum(abs(self.derivative(self.derivative(self.derivative(x))))))
     
     def sliding_avg(self, x, w=1): 
-        if x.ndim > 1:
-            return np.apply_along_axis(lambda y: np.convolve(y, np.ones(w), 'valid') / w, axis=0, arr=x)
-        else:
-            return np.convolve(x, np.ones(w), 'valid') / w
+        return np.convolve(x, np.ones(w), 'valid') / w
     
     def sliding_var(self, x, w=1):
         return bn.move_var(x, window=w)

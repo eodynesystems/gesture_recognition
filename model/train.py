@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 from imblearn.under_sampling import RandomUnderSampler
-from GestureRecognitionModel import GestureRecognitionModel
+from model import GestureRecognitionModel
 
 gestures_to_use = ["ClosedHand", "Neutral", "OpenHand", 
                 "WristSupination", "WristPronation",
