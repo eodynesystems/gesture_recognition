@@ -2,10 +2,11 @@ import pandas as pd
 import numpy as np 
 from xgboost import XGBClassifier
 from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import VotingClassifier
 
 class GestureRecognitionModel():
-    def __init__(self, model_name="xgboost", kernel="rbf"):
-        self.kernel = kernel
+    def __init__(self, model_name="xgboost"):
         self.model_name = model_name
         self.model = self.get_model()
 
@@ -23,11 +24,9 @@ class GestureRecognitionModel():
     def get_model(self):
         if self.model_name == "xgboost":
             return XGBClassifier()
-        elif self.model_name == "svm":
-            return SVC(kernel=self.kernel)
+        elif self.model_name.startswith("svm"):
+            return SVC(kernel=self.model_name.split("_")[-1])
+        elif self.model_name == "mlp":
+            return MLPClassifier(random_state=1,hidden_layer_sizes = 50,max_iter=500)
         else:
             raise ValueError(f"Model - {self.model_name} not implemented.")
-
-    
-    
-        
