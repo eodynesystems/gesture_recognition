@@ -2,7 +2,7 @@ import pandas as pd
 from glob import glob
 from pathlib import PureWindowsPath
 from tqdm import tqdm
-from Signal import Signal
+from model import Signal
 import os
 
 class GestureRecognitionDataset():

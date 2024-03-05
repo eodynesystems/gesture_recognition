@@ -1,2 +1,3 @@
-from GestureRecognitionModel import GestureRecognitionModel
-from Signal import Signal
+from .GestureRecognitionModel import GestureRecognitionModel
+from .Signal import Signal
+from .GestureRecognitionDataset import GestureRecognitionDataset

@@ -26,7 +26,7 @@ class Signal():
         
     def get_features(self, list_features = "all", remove_transition=False):
         if remove_transition:
-            self.remove_transition()
+            self.remove_transition() 
         features = np.empty((0, self.n_features))
         for idx in range(0, self.n_samples-self.window_size, self.step):
             x = self.signal[idx:idx+self.window_size, :]
@@ -39,19 +39,36 @@ class Signal():
             features = np.concatenate((features, f(x).reshape(1, 8)), axis=1)
         return features
 
-    def remove_transition(self):
-        s = self.get_features(list_features=["mav"]).sum(axis=1)
-        # detection
-        algo = rpt.Binseg(model="l2").fit(s)
-        result = algo.predict(n_bkps=1)[0]
-        if result > len(s)//2:
-            result = 20
-        trans_idx = result*self.step
-        if self.signal.shape[0]>2*trans_idx:
+    def remove_transition(self, algorithm="mean",window_size=5):
+        
+        if algorithm == "Binseg":
+
+            # detection using Binseg
+            s = self.get_features(list_features=["mav"]).sum(axis=1)
+            algo = rpt.Binseg(model="l2").fit(s)
+            result = algo.predict(n_bkps=1)[0]
+            if result > len(s) // 2:
+                result = 20
+            trans_idx = result * self.step
+            if self.signal.shape[0] > 2 * trans_idx:
+                self.signal = self.signal[trans_idx:, :]
+                self.n_samples = self.signal.shape[0]
+
+        
+        if algorithm == "mean":
+
+            # detection using the mean  
+            s = self.get_features(list_features=["mav"]).sum(axis=1)
+            trans_idx = 0
+            for i in range(0, len(s)-window_size):
+                window = s[i:i+window_size]
+                if (np.mean(window) > np.mean(s)) :
+                    break
+                trans_idx+=1
+            trans_idx = trans_idx*self.step
             self.signal = self.signal[trans_idx:, :]
             self.n_samples = self.signal.shape[0]
-
-
+    
     # ops 
     def mav(self, x):                                      # mean absolute value
         return sum(abs(x)) / x.shape[0]
@@ -78,11 +95,12 @@ class Signal():
     def iatd(self, x):                                     # integrated absolute of third derivative
         return (sum(abs(self.derivative(self.derivative(self.derivative(x))))))
     
-    def sliding_avg(self, x, w=1):                         # sliding average with window size w
+    def sliding_avg(self, x, w=1): 
         return np.convolve(x, np.ones(w), 'valid') / w
     
     def sliding_var(self, x, w=1):
         return bn.move_var(x, window=w)
+    
     #vis 
     def display(self, attr = "energy", w = 5):
         plt.figure()
@@ -95,7 +113,7 @@ class Signal():
             plt.plot(energy)
             plt.xlabel("time (samples)")
             plt.ylabel("Energy")
-        if attr == "avg_slope_energy":
+        if attr == "avg_slope_energy": 
             energy = self.get_features(list_features=["mav"])
             energy = energy.sum(axis = 1)
             slope = energy[1:] - energy[:-1]
@@ -111,7 +129,7 @@ class Signal():
             plt.plot(mov_var/mov_avg)
             plt.xlabel("time (samples)")
             plt.ylabel(f"Moving Variance of Energy (window = {w})")
-
-
+        ylim_bottom = min(0, plt.gca().get_ylim()[0])
+        plt.gca().set_ylim(bottom=ylim_bottom)
 
 
