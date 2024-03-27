@@ -25,10 +25,19 @@ def parse_ossur_sensor_recording(fpath):
 
     return emg, disp
 
-def failure_plot(df, gesture_to_int, subject="Sergio",gesture="wrist_supin",data_dir="C:/Users/fents/Documents/iLimb/DataCollection/data"):
- 
+def failure_plot(df, subject="Sergio",gesture="wrist_supin",model=GestureRecognitionModel(),plot_first_row_only = False):
+
+    data_dir="C:/Users/fents/Documents/iLimb/DataCollection/data"
     window_size = 250
     step_size = 50
+
+    gestures_to_use = ["hand_close", "hand_neutral", "hand_open", 
+                    "wrist_supin", "wrist_pron","thumb_abd", "thumb_add", "pinch", "lateral", "point"]
+
+    df = df[df.gesture.isin(gestures_to_use)]
+    gestures = df.gesture.unique()
+    gesture_to_int = {gesture:i for i, gesture in enumerate(gestures)}
+    int_to_gesture = {val:key for key, val in gesture_to_int.items()}
 
     df =  df[(df['subject'] == subject)]
     files = glob(f"{data_dir}/{subject}*/{gesture}*.npy")
@@ -40,7 +49,6 @@ def failure_plot(df, gesture_to_int, subject="Sergio",gesture="wrist_supin",data
     for i in range(1, 6):
         df_train = df[df["iteration"] != i]
         df_test = df[df["iteration"] == i]
-        model = GestureRecognitionModel()
         features_to_keep = df_train.columns[:-4]
         X_train, y_train = df_train[features_to_keep], [gesture_to_int[gesture] for gesture in df_train.gesture]
         X_test, y_test = df_test[features_to_keep], [gesture_to_int[gesture] for gesture in df_test.gesture]
@@ -122,13 +130,17 @@ def failure_plot(df, gesture_to_int, subject="Sergio",gesture="wrist_supin",data
 
         for i, (signal, ylabel) in enumerate(zip([flex_signal, ext_signal, disp_flex, disp_ext],
                                                 ["Ext EMG", "Flex EMG", "Ext FMG", "Flex FMG"])):
+            if plot_first_row_only and i != 0:  
+                continue  
+
+            ratios_converted = []
             if i == 0:
                 ratios_converted = [x * len(flex_signal) for x in ratios]
-            if i == 1:
+            elif i == 1:
                 ratios_converted = [x * len(ext_signal) for x in ratios]
-            if i == 2:
+            elif i == 2:
                 ratios_converted = [x * len(disp_flex) for x in ratios]
-            if i == 3:
+            elif i == 3:
                 ratios_converted = [x * len(disp_ext) for x in ratios]
 
             plt.subplot(4, len(files), i * len(files) + idx + 1)
