@@ -9,8 +9,8 @@ class GestureRecognitionModel():
     def __init__(self, model_name="xgboost", class_weight = 'None'):
         self.model_name = model_name
         self.model = self.get_model()
-        if class_weight:
-            self.class_weight = class_weight
+        #if class_weight:
+            #self.class_weight = class_weight
 
     def train(self, x, y):
         self.model.fit(x, y)
@@ -25,7 +25,7 @@ class GestureRecognitionModel():
         if self.model_name == "xgboost":
             return XGBClassifier()
         elif self.model_name.startswith("svm"):
-            return SVC(kernel=self.model_name.split("_")[-1], class_weight = self.class_weight)
+            return SVC(kernel=self.model_name.split("_")[-1]) #, class_weight = self.class_weight)
         elif self.model_name == "mlp":
             return MLPClassifier(random_state=1,hidden_layer_sizes = 50,max_iter=500)
         else:
