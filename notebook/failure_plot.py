@@ -6,15 +6,15 @@ from model import Signal, GestureRecognitionModel
 from imblearn.under_sampling import RandomUnderSampler
 from scipy.interpolate import interp1d
 import sys
-'''
-# hoe dit doen met df?????????????
+import os
+from notebook.data_load import data_load
+
 args = sys.argv
 subject = args[1]
-plot_signals = args[2]
+plot_first_row_only = args[2]
 
 if len(args!=3): 
     raise(ValueError("usage test.py subject"))
-    '''
 
 def parse_ossur_sensor_recording(fpath):
     with open(fpath) as f:
@@ -35,18 +35,22 @@ def parse_ossur_sensor_recording(fpath):
 
     return emg, disp
 
-
-def failure_plot(df,subject="sergio",data_dir = "C:/Users/fents/Documents/iLimb/DataCollection/data"):
+def failure_plot(subject,data_dir = "C:/Users/fents/Documents/iLimb/DataCollection/data"):
 
     gestures_to_use = ["hand_close", "hand_open", 
-                    "wrist_supin", "wrist_pron","thumb_abd", "thumb_add", "pinch", "lateral", "point"] 
+                        "wrist_supin", "wrist_pron","thumb_abd", "thumb_add", "pinch", "lateral", "point"] 
+    
+    df = data_load(subject)
 
-    indices = {}  # Dictionary to store misclassified indices for each gesture
-    reset_indices = {}
-    misclassified_indices_by_set = {}
-    ratios_dict = {}
+    # hier voor elke take??????????/
+
+    indices_by_set = {}
     plot_first_row_only = False
     model=GestureRecognitionModel()
+    ratios = {}  # Dictionary to store ratios for all gestures
+    begin_end_numbers_by_set = {}
+    misclassified_indices_by_set = {}
+
 
     df = df[df.gesture.isin(gestures_to_use)]
     df.reset_index(drop=True, inplace=True)
@@ -55,87 +59,42 @@ def failure_plot(df,subject="sergio",data_dir = "C:/Users/fents/Documents/iLimb/
     int_to_gesture = {val: key for key, val in gesture_to_int.items()}
 
     for gesture in gestures_to_use:
+
         df_gesture = df[df['gesture'] == gesture]
-        # Initialize an empty list to store indices for this gesture
-        indices_list = []
 
-        for idx, row in df_gesture.iterrows():
-            indices_list.append(idx)
+        for i in range(1,6):
+            df_train = df[df["iteration"] != i]
+            df_test = df_gesture[df_gesture["iteration"] == i]
+            features_to_keep = df_train.columns[:-4]
+            X_train, y_train = df_train[features_to_keep], [gesture_to_int[gesture] for gesture in df_train.gesture]
+            X_test = df_test[features_to_keep]
+            y_test = [gesture_to_int[gesture] for gesture in df_test.gesture]
 
-        indices[gesture] = indices_list
-        reset_indices[gesture] = list(range(len(indices_list)))
+            model.train(X_train, y_train)
+            preds = model.predict(X_test)
+            ys = y_test
 
-    for i in range(1, 6):
-        df_train = df[df["iteration"] != i]
-        df_test = df[df["iteration"] == i]
-        features_to_keep = df_train.columns[:-4]
-        X_train, y_train = df_train[features_to_keep], [gesture_to_int[gesture] for gesture in df_train.gesture]
-        X_test, y_test = df_test[features_to_keep], [gesture_to_int[gesture] for gesture in df_test.gesture]
-        rus = RandomUnderSampler()
-        X_test, y_test = rus.fit_resample(X_test, y_test)
-        model.train(X_train, y_train)
-        preds = model.predict(X_test)
-        ys = y_test
-        
-        misclassified_indices = [idx for idx, (pred, true) in enumerate(zip(preds, ys)) if pred != true]
-        original_indices = df_test.index.tolist()
-        original_indices_of_misclassified = [original_indices[idx] for idx in misclassified_indices]
-        
-        misclassified_indices_by_set[i] = original_indices_of_misclassified
-
-    misclassified_indices_per_gesture = {gesture: [] for gesture in gestures_to_use}
-
-    for i in range(1, 6):
-        misclassified_indices = misclassified_indices_by_set[i]
-        for gesture in gestures_to_use:
-            gesture_indices = indices[gesture]
-            misclassified_indices_for_gesture = [idx for idx in misclassified_indices if idx in gesture_indices]
-            misclassified_indices_per_gesture[gesture].append(misclassified_indices_for_gesture)
-
-    all_ratios = {}  # Dictionary to store ratios for all gestures
-
-    for gesture in gestures_to_use:
-        gesture_ratios = []  # List to store ratios for the current gesture
-        
-        for test_set_index in range(0, 5):
-            incorrect_indices = misclassified_indices_per_gesture[gesture][test_set_index]
+            misclassified_indices = [idx for idx, (pred, true) in enumerate(zip(preds, ys)) if pred != true]
+            misclassified_indices_by_set[i] = misclassified_indices
 
             consecutive_sequences = []
-            current_sequence = []
-            min_length = 2
+            sequence = []
 
-            for number in incorrect_indices:
-                if not current_sequence or number == current_sequence[-1] + 1:
-                    current_sequence.append(number)
+            for idx in misclassified_indices:
+                if len(sequence) == 0 or sequence[-1] == idx - 1:
+                    sequence.append(idx)
                 else:
-                    if len(current_sequence) >= min_length:
-                        consecutive_sequences.extend(current_sequence)
-                    current_sequence = [number]
+                    if len(sequence) >= 2:
+                        consecutive_sequences.append((sequence[0], sequence[-1]))
+                    sequence = [idx]
 
-            if len(current_sequence) >= min_length:
-                consecutive_sequences.extend(current_sequence)
+            if len(sequence) >= 2:
+                consecutive_sequences.append((sequence[0], sequence[-1]))
 
-            selected_numbers = []
-            current_sequence = []
+            # Flatten the list of tuples and store it
+            begin_end_numbers_by_set = [num for seq in consecutive_sequences for num in seq]
 
-            for number in consecutive_sequences:
-                if not current_sequence or number == current_sequence[-1] + 1:
-                    current_sequence.append(number)
-                else:
-                    if len(current_sequence) >= 2:
-                        selected_numbers.extend([current_sequence[0], current_sequence[-1]])
-                    current_sequence = [number]
-
-            if len(current_sequence) >= 2:
-                selected_numbers.extend([current_sequence[0], current_sequence[-1]])
-                first_value = indices[gesture][0]
-                normalized_numbers = [num - first_value for num in selected_numbers]
-
-            ratios = [x / len(indices[gesture]) for x in normalized_numbers]
-
-            gesture_ratios.append(ratios) 
-
-        all_ratios[gesture] = gesture_ratios  
+            ratios[i] = [x / len(X_test) for x in begin_end_numbers_by_set]
 
         files = glob(f"{data_dir}/{subject}*/{gesture}*.npy")
         titles = ["Movement 1", "Movement 2", "Movement 3", "Movement 4", "Movement 5"]
@@ -143,6 +102,8 @@ def failure_plot(df,subject="sergio",data_dir = "C:/Users/fents/Documents/iLimb/
         plt.figure(figsize=(20, 10))
 
         for idx, fpath in enumerate(files):
+
+            ratios_set = ratios[idx+1]
 
             emg, disp = parse_ossur_sensor_recording(fpath)
             flex = emg[:, :2]
@@ -162,22 +123,23 @@ def failure_plot(df,subject="sergio",data_dir = "C:/Users/fents/Documents/iLimb/
             interp_func2 = interp1d(original_time_points, disp_flex, kind='linear')
             disp_flex = interp_func2(new_time_points)
 
-            ratios = all_ratios[gesture][idx]
-
             for i, (signal, ylabel) in enumerate(zip([flex_signal, ext_signal, disp_flex, disp_ext],
                                                     ["Ext EMG", "Flex EMG", "Ext FMG", "Flex FMG"])):
+
+
                 if plot_first_row_only and i != 0:  
                     continue  
 
+
                 ratios_converted = []
                 if i == 0:
-                    ratios_converted = [x * len(flex_signal) for x in ratios]
+                    ratios_converted = [x * len(flex_signal) for x in ratios_set]
                 elif i == 1:
-                    ratios_converted = [x * len(ext_signal) for x in ratios]
+                    ratios_converted = [x * len(ext_signal) for x in ratios_set]
                 elif i == 2:
-                    ratios_converted = [x * len(disp_flex) for x in ratios]
+                    ratios_converted = [x * len(disp_flex) for x in ratios_set]
                 elif i == 3:
-                    ratios_converted = [x * len(disp_ext) for x in ratios]
+                    ratios_converted = [x * len(disp_ext) for x in ratios_set]
 
                 plt.subplot(4, len(files), i * len(files) + idx + 1)
                 
@@ -185,7 +147,7 @@ def failure_plot(df,subject="sergio",data_dir = "C:/Users/fents/Documents/iLimb/
                     plt.plot(signal, c="blue", linewidth=2.5)
                 else:
                     plt.plot(signal, c="blue")
-                
+
                 for j in range(0, len(ratios_converted), 2):
                     start = int(ratios_converted[j])
                     end = int(ratios_converted[j + 1])
@@ -209,4 +171,12 @@ def failure_plot(df,subject="sergio",data_dir = "C:/Users/fents/Documents/iLimb/
 
         plt.suptitle(gesture)
         plt.tight_layout()
-        plt.show()
+
+        # Construct save path for each figure
+        save_path = os.path.join(data_dir, f"{subject}_{gesture}.pdf")
+
+        # Save the figure as a PDF
+        plt.savefig(save_path)
+        plt.show()  # Show the figure
+        plt.close()  # Close the figure to release memory
+
