@@ -9,12 +9,6 @@ import sys
 import os
 from notebook.data_load import data_load
 
-args = sys.argv
-subject = args[1]
-plot_first_row_only = args[2]
-
-if len(args!=3): 
-    raise(ValueError("usage test.py subject"))
 
 def parse_ossur_sensor_recording(fpath):
     with open(fpath) as f:
@@ -42,14 +36,7 @@ def failure_plot(subject,data_dir = "C:/Users/fents/Documents/iLimb/DataCollecti
     
     df = data_load(subject)
 
-    # hier voor elke take??????????/
-
-    indices_by_set = {}
     plot_first_row_only = False
-    model=GestureRecognitionModel()
-    ratios = {}  # Dictionary to store ratios for all gestures
-    begin_end_numbers_by_set = {}
-    misclassified_indices_by_set = {}
 
 
     df = df[df.gesture.isin(gestures_to_use)]
@@ -58,125 +45,140 @@ def failure_plot(subject,data_dir = "C:/Users/fents/Documents/iLimb/DataCollecti
     gesture_to_int = {gesture: i for i, gesture in enumerate(gestures)}
     int_to_gesture = {val: key for key, val in gesture_to_int.items()}
 
-    for gesture in gestures_to_use:
+    df = df[df.gesture.isin(gestures_to_use)]
+    takes = df['take'].tolist()
+    unique_values = list(set(takes))
 
-        df_gesture = df[df['gesture'] == gesture]
+    for take in unique_values: 
 
-        for i in range(1,6):
-            df_train = df[df["iteration"] != i]
-            df_test = df_gesture[df_gesture["iteration"] == i]
-            features_to_keep = df_train.columns[:-4]
-            X_train, y_train = df_train[features_to_keep], [gesture_to_int[gesture] for gesture in df_train.gesture]
-            X_test = df_test[features_to_keep]
-            y_test = [gesture_to_int[gesture] for gesture in df_test.gesture]
+        ratios = {} 
+        begin_end_numbers_by_set = {}
+        misclassified_indices_by_set = {}
+        indices_by_set = {}
+        model=GestureRecognitionModel()
 
-            model.train(X_train, y_train)
-            preds = model.predict(X_test)
-            ys = y_test
+        df_take = df[df['take'] == take]
 
-            misclassified_indices = [idx for idx, (pred, true) in enumerate(zip(preds, ys)) if pred != true]
-            misclassified_indices_by_set[i] = misclassified_indices
+        for gesture in gestures_to_use:
 
-            consecutive_sequences = []
-            sequence = []
+            df_gesture = df_take[df_take['gesture'] == gesture]
 
-            for idx in misclassified_indices:
-                if len(sequence) == 0 or sequence[-1] == idx - 1:
-                    sequence.append(idx)
-                else:
-                    if len(sequence) >= 2:
-                        consecutive_sequences.append((sequence[0], sequence[-1]))
-                    sequence = [idx]
+            for i in range(1,6):
+                df_train = df_take[df_take["iteration"] != i]
+                df_test = df_gesture[df_gesture["iteration"] == i]
+                features_to_keep = df_train.columns[:-4]
+                X_train, y_train = df_train[features_to_keep], [gesture_to_int[gesture] for gesture in df_train.gesture]
+                X_test = df_test[features_to_keep]
+                y_test = [gesture_to_int[gesture] for gesture in df_test.gesture]
 
-            if len(sequence) >= 2:
-                consecutive_sequences.append((sequence[0], sequence[-1]))
+                model.train(X_train, y_train)
+                preds = model.predict(X_test)
+                ys = y_test
 
-            # Flatten the list of tuples and store it
-            begin_end_numbers_by_set = [num for seq in consecutive_sequences for num in seq]
+                misclassified_indices = [idx for idx, (pred, true) in enumerate(zip(preds, ys)) if pred != true]
+                misclassified_indices_by_set[i] = misclassified_indices
 
-            ratios[i] = [x / len(X_test) for x in begin_end_numbers_by_set]
+                consecutive_sequences = []
+                sequence = []
 
-        files = glob(f"{data_dir}/{subject}*/{gesture}*.npy")
-        titles = ["Movement 1", "Movement 2", "Movement 3", "Movement 4", "Movement 5"]
+                for idx in misclassified_indices:
+                    if len(sequence) == 0 or sequence[-1] == idx - 1:
+                        sequence.append(idx)
+                    else:
+                        if len(sequence) >= 2:
+                            consecutive_sequences.append((sequence[0], sequence[-1]))
+                        sequence = [idx]
 
-        plt.figure(figsize=(20, 10))
+                if len(sequence) >= 2:
+                    consecutive_sequences.append((sequence[0], sequence[-1]))
 
-        for idx, fpath in enumerate(files):
+                begin_end_numbers_by_set = [num for seq in consecutive_sequences for num in seq]
 
-            ratios_set = ratios[idx+1]
+                ratios[i] = [x / len(X_test) for x in begin_end_numbers_by_set]
 
-            emg, disp = parse_ossur_sensor_recording(fpath)
-            flex = emg[:, :2]
-            ext = emg[:, 2:]
-            disp_flex = disp[:, 3]
-            disp_ext = disp[:, 1]
+            files = glob(f"{data_dir}/{subject}{take}/*{gesture}*.npy")
+            titles = ["Movement 1", "Movement 2", "Movement 3", "Movement 4", "Movement 5"]
 
-            flex_signal = np.mean(flex, axis=1)
-            ext_signal = np.mean(ext, axis=1)
+            plt.figure(figsize=(20, 10))
 
-            original_time_points = np.arange(len(disp_ext))
-            new_time_points = np.linspace(0, len(disp_ext) - 1, len(flex_signal))
+            for idx, fpath in enumerate(files):
 
-            interp_func = interp1d(original_time_points, disp_ext, kind='linear')
-            disp_ext = interp_func(new_time_points)
+                ratios_set = ratios[idx+1]
 
-            interp_func2 = interp1d(original_time_points, disp_flex, kind='linear')
-            disp_flex = interp_func2(new_time_points)
+                emg, disp = parse_ossur_sensor_recording(fpath)
+                flex = emg[:, :2]
+                ext = emg[:, 2:]
+                disp_flex = disp[:, 3]
+                disp_ext = disp[:, 1]
 
-            for i, (signal, ylabel) in enumerate(zip([flex_signal, ext_signal, disp_flex, disp_ext],
-                                                    ["Ext EMG", "Flex EMG", "Ext FMG", "Flex FMG"])):
+                flex_signal = np.mean(flex, axis=1)
+                ext_signal = np.mean(ext, axis=1)
 
+                original_time_points = np.arange(len(disp_ext))
+                new_time_points = np.linspace(0, len(disp_ext) - 1, len(flex_signal))
 
-                if plot_first_row_only and i != 0:  
-                    continue  
+                interp_func = interp1d(original_time_points, disp_ext, kind='linear')
+                disp_ext = interp_func(new_time_points)
 
+                interp_func2 = interp1d(original_time_points, disp_flex, kind='linear')
+                disp_flex = interp_func2(new_time_points)
 
-                ratios_converted = []
-                if i == 0:
-                    ratios_converted = [x * len(flex_signal) for x in ratios_set]
-                elif i == 1:
-                    ratios_converted = [x * len(ext_signal) for x in ratios_set]
-                elif i == 2:
-                    ratios_converted = [x * len(disp_flex) for x in ratios_set]
-                elif i == 3:
-                    ratios_converted = [x * len(disp_ext) for x in ratios_set]
+                for i, (signal, ylabel) in enumerate(zip([flex_signal, ext_signal, disp_flex, disp_ext],
+                                                        ["Ext EMG", "Flex EMG", "Ext FMG", "Flex FMG"])):
 
-                plt.subplot(4, len(files), i * len(files) + idx + 1)
-                
-                if i > 1:
-                    plt.plot(signal, c="blue", linewidth=2.5)
-                else:
-                    plt.plot(signal, c="blue")
+                    if plot_first_row_only and i != 0:  
+                        continue  
 
-                for j in range(0, len(ratios_converted), 2):
-                    start = int(ratios_converted[j])
-                    end = int(ratios_converted[j + 1])
-                    x_values = range(start, end) 
-                    y_values = signal[start:end]
+                    ratios_converted = []
+                    if i == 0:
+                        ratios_converted = [x * len(flex_signal) for x in ratios_set]
+                    elif i == 1:
+                        ratios_converted = [x * len(ext_signal) for x in ratios_set]
+                    elif i == 2:
+                        ratios_converted = [x * len(disp_flex) for x in ratios_set]
+                    elif i == 3:
+                        ratios_converted = [x * len(disp_ext) for x in ratios_set]
 
-                    if len(x_values) > 0: 
-                        plt.plot(x_values, y_values, c="red",linewidth=3)
+                    plt.subplot(4, len(files), i * len(files) + idx + 1)
+                    
+                    if i > 1:
+                        plt.plot(signal, c="blue", linewidth=2.5)
+                    else:
+                        plt.plot(signal, c="blue")
 
-                plt.ylim(-2000, 2000)
-                plt.xticks([] if i < 3 else None)
+                    for j in range(0, len(ratios_converted), 2):
+                        start = int(ratios_converted[j])
+                        end = int(ratios_converted[j + 1])
+                        x_values = range(start, end) 
+                        y_values = signal[start:end]
 
-                if idx == 0:
-                    plt.ylabel(ylabel)
-                    plt.yticks([-2000, 0, 2000])
-                else:
-                    plt.yticks([])
+                        if len(x_values) > 0: 
+                            plt.plot(x_values, y_values, c="red",linewidth=3)
 
-                if i == 0:
-                    plt.title(titles[idx])
+                    plt.ylim(-2000, 2000)
+                    plt.xticks([] if i < 3 else None)
 
-        plt.suptitle(gesture)
-        plt.tight_layout()
+                    if idx == 0:
+                        plt.ylabel(ylabel)
+                        plt.yticks([-2000, 0, 2000])
+                    else:
+                        plt.yticks([])
 
-        # Construct save path for each figure
-        save_path = os.path.join(data_dir, f"{subject}_{gesture}.pdf")
+                    if i == 0:
+                        plt.title(titles[idx])
 
-        # Save the figure as a PDF
-        plt.savefig(save_path)
-        plt.show()  # Show the figure
-        plt.close()  # Close the figure to release memory
+            plt.suptitle(subject +" "+ gesture + " take " + str(take))
+            plt.tight_layout()
 
+            save_path = os.path.join(data_dir, f"{subject}_{take}_{gesture}.pdf")
+
+            plt.savefig(save_path)
+            plt.show()  
+            plt.close()  
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3: 
+        raise ValueError("Usage: script.py subject plot_first_row_only")
+    subject = sys.argv[1]
+    plot_first_row_only = bool(sys.argv[2])
+    failure_plot(subject, plot_first_row_only)
