@@ -2,10 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
 import json
+
+# import our custom classes
+import sys
+path_to_directory = '../'
+if path_to_directory not in sys.path:
+    sys.path.append(path_to_directory)
 from model import Signal, GestureRecognitionModel
+
 from imblearn.under_sampling import RandomUnderSampler
 from scipy.interpolate import interp1d
-import sys
 import os
 from notebook.data_load import data_load
 
