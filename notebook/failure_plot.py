@@ -40,6 +40,8 @@ def failure_plot(subject,data_dir = "C:/Users/fents/Documents/iLimb/DataCollecti
     gestures_to_use = ["hand_close", "hand_open", 
                         "wrist_supin", "wrist_pron","thumb_abd", "thumb_add", "pinch", "lateral", "point"] 
     
+    save_dir = "C:/Users/fents/Documents/intro/gesture_recognition/results/results_failure_plot"
+    
     df = data_load(subject)
 
     plot_first_row_only = False
@@ -176,7 +178,7 @@ def failure_plot(subject,data_dir = "C:/Users/fents/Documents/iLimb/DataCollecti
             plt.suptitle(subject +" "+ gesture + " take " + str(take))
             plt.tight_layout()
 
-            save_path = os.path.join(data_dir, f"{subject}_{take}_{gesture}.pdf")
+            save_path = os.path.join(save_dir, f"{subject}_{take}_{gesture}.pdf")
 
             plt.savefig(save_path)
             plt.show()  
