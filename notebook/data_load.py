@@ -186,7 +186,7 @@ def data_load(subject):
     window_size = 250
     step_size = 50
 
-    data_dir = "C:/Users/fents/Documents/iLimb/DataCollection/data"
+    data_dir = "C:/Users/fents/Documents/DataCollection/data"
 
     files = glob(f"{data_dir}/{subject}*/*.npy")
     df = None
